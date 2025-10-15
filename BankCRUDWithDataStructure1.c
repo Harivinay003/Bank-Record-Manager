@@ -38,7 +38,7 @@ int main() {
     
 	loadAccountsIntoList();
 	showMenu();
-    	return 0;
+    return 0;
 }
 
 void createAccount()
@@ -95,7 +95,8 @@ void updateAccount()
 	
 	if(foundAccount == 0)
 	{
-		printf("%s Not Found!\n", accountNumberToCheck);
+		//printf("%s Not Found!\n", accountNumberToCheck);
+		printNotFoundMessage(accountNumberToCheck);
 	}
 	else
 	{
@@ -141,7 +142,8 @@ void deleteAccount()
 	}
 	if (foundAccount == 0)
 	{
-		printf("%s Not Found\n", accountNumberToCheck);
+		//printf("%s Not Found\n", accountNumberToCheck);
+		printNotFoundMessage(accountNumberToCheck);
 	}
 	pause();
 }
@@ -173,7 +175,8 @@ void loadAccountsIntoList()
 	FILE *fpData = fopen(DATA_FILE, "rb");
 	if (!fpData)
 	{
-		printf("%s is Not Found!", DATA_FILE);
+		//printf("%s is Not Found!", DATA_FILE);
+		printNotFoundMessage(DATA_FILE);
 		return ;
 	}
 	Bank tempAccount;
@@ -228,7 +231,8 @@ void saveIntoFile()
 	FILE *fpData = fopen(DATA_FILE, "wb");
 	if (!fpData)
 	{
-		printf("%s Not Found!\n", DATA_FILE);
+		//printf("%s Not Found!\n", DATA_FILE);
+		printNotFoundMessage(DATA_FILE);
 		return;
 	}
 	current = start;
@@ -243,6 +247,12 @@ void saveIntoFile()
 void saveDeletedIntoFile()
 {
 	FILE *fpData = fopen(DELETED_DATA_FILE, "ab");
+	if (!fpData)
+	{
+		printNotFoundMessage(DATA_FILE);
+		return;
+	}
+	
 	fwrite(&current->account, sizeof(Bank), 1, fpData);
 	fclose(fpData);
 }

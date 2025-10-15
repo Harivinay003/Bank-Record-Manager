@@ -33,6 +33,11 @@ void underLine(char *text)
 	}
 }
 
+void printNotFoundMessage(char *text)
+{
+	printf("%s Not Found\n", text);	
+}
+
 void printAccountNumberMessage()
 {
 	printf("Enter Account Number: ");
