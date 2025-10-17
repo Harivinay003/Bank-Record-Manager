@@ -27,18 +27,24 @@ void updateAccount();
 void deleteAccount();
 void showAllAccounts();
 void printMenu();
-void saveIntoFile();
+void printUpdateMenu();
+void saveListIntoFile();
 void loadAccountsIntoList();
 void pointCurrentToEnd();
 void readAccountDetails(Bank*);
 void appendAccountToList(Bank);
-void saveDeletedIntoFile();
+struct node* createNode(struct node*, Bank*);
+void saveDeletedIntoFile(struct node*);
+void searchAccount(struct node**, int*, char*);
+void updateNode(struct node*, char*);
+void deleteNode(struct node*, char*);
+void printRecord(struct node*);
 
-int main() {
-    
+int main() 
+{    
 	loadAccountsIntoList();
 	showMenu();
-    return 0;
+    	return 0;
 }
 
 void createAccount()
@@ -46,104 +52,45 @@ void createAccount()
 	Bank tempAccount;
 	readAccountDetails(&tempAccount);
 	appendAccountToList(tempAccount);	
-	saveIntoFile();
+	saveListIntoFile();
 	printf("Account Saved Successfully!\n");
 	pause();
 }
 
 void updateAccount()
 {
+	struct node *node = NULL;
+	int foundAccount;
 	char accountNumberToCheck[LENGTH];
-	printAccountNumberMessage();
-	readText(accountNumberToCheck, LENGTH);
-	int foundAccount = 0;
-	current = start;
-	while (current != NULL)
-	{
-		if (strcmp(current->account.accountNumber, accountNumberToCheck) == 0)
-		{	
-			printf("Match Found!\n");					
-			foundAccount = 1;
-			int choice;
-			printf("Update Menu\n--------\n1.Account Name\n2.Account Balance\n3.Account Name and Balance\nEnter Your Choice: ");
-			scanf("%d", &choice);
-			getchar();
-			switch(choice)
-			{
-				case 1:	
-					printAccountNameMessage();
-					readText(current->account.accountName, sizeof(current->account.accountName));
-					break;
-				case 2:
-					printAccountBalanceMessage();
-					readNumber(&current->account.balance);
-					break;
-				case 3:
-					printAccountNameMessage();
-					readText(current->account.accountName, sizeof(current->account.accountName));
-					printAccountBalanceMessage();
-					readNumber(&current->account.balance);
-					break;
-				default:
-					printf("Invalid choice!\n"); 
-					break;
-			}
-			break;
-		}
-		current = current->next;	
-	}
-	
+	searchAccount(&node, &foundAccount, accountNumberToCheck);
 	if(foundAccount == 0)
 	{
-		//printf("%s Not Found!\n", accountNumberToCheck);
 		printNotFoundMessage(accountNumberToCheck);
+		pause();
+		return;
 	}
 	else
 	{
-		saveIntoFile();
-		printf("%s Updated Successfully!\n", accountNumberToCheck);
+		updateNode(node, accountNumberToCheck);
 	}
 	pause();
 }
 
 void deleteAccount()
 {
+	struct node *node = NULL;
+	int foundAccount;
 	char accountNumberToCheck[LENGTH];
-	printAccountNumberMessage();
-	readText(accountNumberToCheck, LENGTH);
-	int foundAccount = 0;
-	current = start;
-	if (start == NULL)
-	{
-		printf("No Records!\n");
-	}
-	struct node *previous = NULL;
-	while (current != NULL)
-	{
-		if (strcmp(current->account.accountNumber, accountNumberToCheck) == 0)
-		{	
-			if (previous == NULL)
-			{
-				start = current->next;
-			}
-			else
-			{
-				previous->next = current->next;
-			}
-			saveDeletedIntoFile();
-			free(current);
-			saveIntoFile();
-			foundAccount = 1;
-			printf("%s Deleted Successfully!\n", accountNumberToCheck);
-			break;		
-		}
-		previous = current;
-		current = current->next;
-	}
+	searchAccount(&node, &foundAccount, accountNumberToCheck);
 	if (foundAccount == 0)
 	{
-		//printf("%s Not Found\n", accountNumberToCheck);
 		printNotFoundMessage(accountNumberToCheck);
+		pause();
+		return;
+	}
+	else
+	{
+		deleteNode(node, accountNumberToCheck);
 	}
 	pause();
 }
@@ -157,16 +104,22 @@ void showAllAccounts()
 		pause();
 		return;
 	}
-	printf("\nBank Accounts\n-----------------\n");
+	printHeading("Bank Accounts");
+	printf("\n");
 	while (current != NULL)	
 	{
-		printf("Account Number: %s\n", current->account.accountNumber);
-		printf("Account Name: %s\n", current->account.accountName);
-		printf("Account Balance: %.2f\n------------------\n", current->account.balance);
-		current = current->next;
+		printRecord(current);
+		current = current->next;		
 	}
 	printf("End of Accounts!\n");
 	pause();
+}
+
+void printRecord(struct node *node)
+{
+	printf("Account Number: %s\n", node->account.accountNumber);
+	printf("Account Name: %s\n", node->account.accountName);
+	printf("Account Balance: %.2f\n------------------------\n", node->account.balance);
 }
 
 void loadAccountsIntoList()
@@ -175,17 +128,14 @@ void loadAccountsIntoList()
 	FILE *fpData = fopen(DATA_FILE, "rb");
 	if (!fpData)
 	{
-		//printf("%s is Not Found!", DATA_FILE);
 		printNotFoundMessage(DATA_FILE);
-		return ;
+		return;
 	}
 	Bank tempAccount;
 	while (fread(&tempAccount, sizeof(Bank), 1, fpData))
 	{
 		struct node *newNode;
-		newNode = malloc(sizeof(struct node));
-		newNode->account = tempAccount;
-		newNode->next = NULL;
+		newNode = createNode(newNode, &tempAccount);
 		if (start == NULL)
 		{
 			start = newNode;
@@ -207,15 +157,12 @@ void readAccountDetails(Bank *tempAccount)
 	readText(tempAccount->accountName, sizeof(tempAccount->accountName));
 	printAccountBalanceMessage();
 	readNumber(&tempAccount->balance);
-	
 }
+
 void appendAccountToList(Bank tempAccount)
 {
 	struct node *newNode;
-	newNode = malloc(sizeof(struct node));
-	newNode->account = tempAccount;
-	newNode->next = NULL;
-	
+	newNode = createNode(newNode, &tempAccount);
 	if (start == NULL)
 	{
 		start = newNode;
@@ -226,12 +173,19 @@ void appendAccountToList(Bank tempAccount)
 		current->next = newNode;
 	}		
 }
-void saveIntoFile()
+
+struct node* createNode(struct node *newNode, Bank *tempAccount)
+{
+	newNode = malloc(sizeof(struct node));
+	newNode->account = *tempAccount;
+	newNode->next = NULL;
+	return newNode;
+}
+void saveListIntoFile()
 {	
 	FILE *fpData = fopen(DATA_FILE, "wb");
 	if (!fpData)
 	{
-		//printf("%s Not Found!\n", DATA_FILE);
 		printNotFoundMessage(DATA_FILE);
 		return;
 	}
@@ -244,7 +198,7 @@ void saveIntoFile()
 	fclose(fpData);
 }
 
-void saveDeletedIntoFile()
+void saveDeletedIntoFile(struct node *node)
 {
 	FILE *fpData = fopen(DELETED_DATA_FILE, "ab");
 	if (!fpData)
@@ -253,8 +207,76 @@ void saveDeletedIntoFile()
 		return;
 	}
 	
-	fwrite(&current->account, sizeof(Bank), 1, fpData);
+	fwrite(&node->account, sizeof(Bank), 1, fpData);
 	fclose(fpData);
+}
+
+void searchAccount(struct node **previous, int *foundAccount, char *accountNumberToCheck)
+{
+	printAccountNumberMessage();
+	readText(accountNumberToCheck, LENGTH);
+	*foundAccount = 0;
+	*previous = NULL;
+	current = start;
+	if (current == NULL)
+	{
+		printf("No Records!\n"); return;
+	}
+	while (current != NULL)
+	{
+		if (strcmp(current->account.accountNumber, accountNumberToCheck) == 0)
+		{
+			*previous = current;
+			*foundAccount = 1;
+			break;
+		}
+		current = current->next;
+	}
+}
+
+void updateNode(struct node *nodeToBeUpdated, char *accountNumberToCheck)
+{
+	printf("Match Found!\n");					
+	int choice;
+	printUpdateMenu();
+	readChoice(&choice);
+	switch(choice)
+	{
+		case 1:	
+			printAccountNameMessage();
+			readText(nodeToBeUpdated->account.accountName, sizeof(nodeToBeUpdated->account.accountName));
+			break;
+		case 2:
+			printAccountBalanceMessage();
+			readNumber(&nodeToBeUpdated->account.balance);
+			break;
+		case 3:
+			printAccountNameMessage();
+			readText(nodeToBeUpdated->account.accountName, sizeof(nodeToBeUpdated->account.accountName));
+			printAccountBalanceMessage();
+			readNumber(&nodeToBeUpdated->account.balance);
+			break;
+		default:
+			printf("Invalid choice!\n");
+			return;
+	}
+	saveListIntoFile();
+	printf("%s Updated Successfully!\n", accountNumberToCheck);
+}
+
+void deleteNode(struct node *nodeToBeDeleted, char *accountNumberToCheck)
+{
+	current = start;
+	struct node *temp = NULL;	
+	struct node **indirect = &start;
+	while (*indirect != nodeToBeDeleted)
+	{
+		indirect = &(*indirect)->next;
+	}
+	saveDeletedIntoFile(nodeToBeDeleted);
+	*indirect = nodeToBeDeleted->next;
+	saveListIntoFile();
+	printf("%s Deleted Successfully!\n", accountNumberToCheck);
 }
 
 void pointCurrentToEnd()
@@ -268,11 +290,14 @@ void pointCurrentToEnd()
 
 void printMenu()
 {
-	char *heading = "BANK Details";
-	underLine(heading);
-	printf("\n%s\n", heading);
-	underLine(heading);
+	printHeading("BANK Details");
 	printf("\n1.Add Account\n2.Update Account\n3.Delete Account\n4.Show All Accounts\n5.Exit\n-------------\nEnter Your Choice: ");
+}
+
+void printUpdateMenu()
+{
+	printHeading("Update Menu");
+	printf("\n1.Account Name\n2.Account Balance\n3.Account Name and Balance\nEnter Your Choice: ");	
 }
 
 void showMenu()
@@ -281,8 +306,7 @@ void showMenu()
    	do {
 		clear();
 		printMenu();
-		scanf("%d", &choice);
-		getchar();
+		readChoice(&choice);
 		switch(choice)
 		{
 			case 1: createAccount(); break;

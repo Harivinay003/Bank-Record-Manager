@@ -32,6 +32,12 @@ void underLine(char *text)
 		printf("-");
 	}
 }
+void printHeading(char *heading)
+{
+	underLine(heading);
+	printf("\n%s\n", heading);
+	underLine(heading);
+}
 
 void printNotFoundMessage(char *text)
 {
